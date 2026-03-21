@@ -1,0 +1,30 @@
+# Dependências
+vendor/
+node_modules/
+
+# Cache e logs
+*.log
+.cache/
+cache/
+
+# IDE e editores
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Arquivos temporários
+*.tmp
+*.bak
+*.old
+
+# Configurações locais
+config_*.php
+!config.xml
+
+# Arquivos de sistema
+Thumbs.db
+.env
+.env.local

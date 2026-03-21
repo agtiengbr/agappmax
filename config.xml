@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module>
+  <name>agappmax</name>
+  <displayName>AppMax</displayName>
+  <version>2.0.11</version>
+  <description>Integração com AppMax: PIX, Boleto e Cartão.</description>
+  <author>AGTI</author>
+  <tab>payments_gateways</tab>
+  <is_configurable>1</is_configurable>
+</module>
