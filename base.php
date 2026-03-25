@@ -1710,6 +1710,17 @@ class BaseAgappmax extends AgPaymentModule
             'modules/' . $this->name . '/views/js/agappmax-masks.js',
             ['position' => 'bottom', 'priority' => 90]
         );
+        // Loading overlay (spinner ao submeter formulário de pagamento)
+        $this->context->controller->registerJavascript(
+            'agappmax-loading-overlay',
+            'modules/' . $this->name . '/views/js/loadingOverlay.js',
+            ['position' => 'bottom', 'priority' => 91]
+        );
+        $this->context->controller->registerJavascript(
+            'agappmax-loading',
+            'modules/' . $this->name . '/views/js/agappmax-loading.js',
+            ['position' => 'bottom', 'priority' => 92]
+        );
         return '';
     }
 
