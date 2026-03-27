@@ -1390,8 +1390,42 @@ class BaseAgappmax extends AgPaymentModule
         }
         
         if ($verboseLog) {
+            $historyLanguageId = (int) Configuration::get('PS_LANG_DEFAULT');
+            $historyRows = Db::getInstance()->executeS(
+                'SELECT oh.`id_order_state`, osl.`name`
+                FROM `' . _DB_PREFIX_ . 'order_history` oh
+                LEFT JOIN `' . _DB_PREFIX_ . 'order_state_lang` osl
+                  ON osl.`id_order_state` = oh.`id_order_state`
+                 AND osl.`id_lang` = ' . $historyLanguageId . '
+                WHERE oh.`id_order` = ' . (int) $idOrder . '
+                ORDER BY oh.`date_add` ASC, oh.`id_order_history` ASC'
+            );
+
+            $historyStates = [];
+            if (is_array($historyRows)) {
+                foreach ($historyRows as $historyRow) {
+                    $stateName = !empty($historyRow['name'])
+                        ? (string) $historyRow['name']
+                        : ('ID ' . (int) $historyRow['id_order_state']);
+                    $historyStates[] = $stateName . ' (#' . (int) $historyRow['id_order_state'] . ')';
+                }
+            }
+
+            $historySummary = !empty($historyStates)
+                ? implode(', ', $historyStates)
+                : 'nenhum estado anterior registrado';
+
             Logger::addLog(
                 '[AGAPPMAX WEBHOOK] Pedido encontrado: #' . $idOrder . ', status_atual=' . (new Order($idOrder))->current_state . ', novo_status=' . $orderStateId,
+                1,
+                null,
+                'Webhook',
+                0,
+                true
+            );
+
+            Logger::addLog(
+                '[AGAPPMAX WEBHOOK] O pedido #' . $idOrder . ' passou pelos estados: ' . $historySummary,
                 1,
                 null,
                 'Webhook',
