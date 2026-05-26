@@ -18,6 +18,16 @@
         <input type="text" class="form-control" name="AGAPPMAX_API_TOKEN_SANDBOX" value="{$config.API_TOKEN_SANDBOX|escape}">
       </div>
     </div>
+    <div class="row" style="margin-top:15px;">
+      <div class="col-md-6">
+        <label>Exibir aviso de pedidos sem integração</label>
+        <select name="AGAPPMAX_SHOW_MISSING_TRANSACTION_WARNING" class="form-control">
+          <option value="1" {if $config.SHOW_MISSING_TRANSACTION_WARNING}selected{/if}>Sim</option>
+          <option value="0" {if !$config.SHOW_MISSING_TRANSACTION_WARNING}selected{/if}>Nao</option>
+        </select>
+        <p class="help-block">Quando desativado, o alerta com a lista de pedidos sem transação vinculada deixa de aparecer no administrativo.</p>
+      </div>
+    </div>
     <div class="panel-footer">
       <button name="submitAgappmax" class="btn btn-primary" type="submit"><i class="icon-save"></i> Salvar</button>
     </div>

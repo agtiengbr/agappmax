@@ -99,6 +99,7 @@ class AdminAgappmaxController extends ModuleAdminController
                 $m::CFG_COUPON_ID_BOLETO,
                 $m::CFG_PIX_EXPIRATION_DAYS,
                 $m::CFG_BOLETO_BUSINESS_DAYS,
+                $m::CFG_SHOW_MISSING_TRANSACTION_WARNING,
             ];
 
 
@@ -257,6 +258,7 @@ class AdminAgappmaxController extends ModuleAdminController
             'ADDRESS_NUMBER_FIELD' => $addrNumField,
             'PIX_EXPIRATION_DAYS' => (int)Configuration::get($m::CONFIG_PREFIX . $m::CFG_PIX_EXPIRATION_DAYS),
             'BOLETO_BUSINESS_DAYS' => (int)Configuration::get($m::CONFIG_PREFIX . $m::CFG_BOLETO_BUSINESS_DAYS),
+            'SHOW_MISSING_TRANSACTION_WARNING' => (int)Configuration::get($m::CONFIG_PREFIX . $m::CFG_SHOW_MISSING_TRANSACTION_WARNING),
         ];
         // Adicionar taxas de juros por parcela ao array $config
         for ($i = 1; $i <= $maxParc; $i++) {
