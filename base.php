@@ -46,6 +46,7 @@ class BaseAgappmax extends AgPaymentModule
     const CFG_STATUS_BEHAVIOR_PREFIX = 'MAP_BEHAVIOR_';
     const CFG_BOLETO_BUSINESS_DAYS = 'BOLETO_BUSINESS_DAYS';
     const CFG_PIX_EXPIRATION_DAYS = 'PIX_EXPIRATION_DAYS';
+    const CFG_SHOW_MISSING_TRANSACTION_WARNING = 'SHOW_MISSING_TRANSACTION_WARNING';
 
     // Status mapeáveis conforme webhooks AppMax
     const APPMAX_STATUSES = [
@@ -74,6 +75,7 @@ class BaseAgappmax extends AgPaymentModule
     const TBL_CUSTOMER = 'agappmax_customer';
 
     protected $hooks = [
+        'displayBackOfficeHeader',
         'displayHeader',
         'paymentOptions',
         'paymentReturn',
@@ -122,7 +124,7 @@ class BaseAgappmax extends AgPaymentModule
     {
         $this->name = 'agappmax';
         $this->tab = 'payments_gateways';
-        $this->version = '2.0.11';
+        $this->version = '2.0.12';
         $this->author = 'AGTI';
         $this->bootstrap = true;
 
@@ -269,6 +271,7 @@ class BaseAgappmax extends AgPaymentModule
             self::CFG_COUPON_ID_BOLETO,
             self::CFG_PIX_EXPIRATION_DAYS,
             self::CFG_BOLETO_BUSINESS_DAYS,
+            self::CFG_SHOW_MISSING_TRANSACTION_WARNING,
         ] as $key) {
             Configuration::deleteByName(self::CONFIG_PREFIX . $key);
         }
@@ -344,6 +347,15 @@ class BaseAgappmax extends AgPaymentModule
             KEY `idx_appmax_customer` (`appmax_customer_id`)
         ) ENGINE={$engine} DEFAULT CHARSET=utf8mb4;";
 
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$prefix}agappmax_missing_transaction_ignore` (
+            `id_agappmax_missing_transaction_ignore` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `id_order` INT UNSIGNED NOT NULL,
+            `date_add` DATETIME NOT NULL,
+            PRIMARY KEY (`id_agappmax_missing_transaction_ignore`),
+            UNIQUE KEY `uniq_agappmax_missing_transaction_ignore_order` (`id_order`),
+            KEY `idx_agappmax_missing_transaction_ignore_date_add` (`date_add`)
+        ) ENGINE={$engine} DEFAULT CHARSET=utf8mb4;";
+
         foreach ($sql as $s) {
             if (!Db::getInstance()->execute($s)) {
                 return false;
@@ -388,6 +400,7 @@ class BaseAgappmax extends AgPaymentModule
             self::CFG_COUPON_ID_BOLETO => '',
             self::CFG_PIX_EXPIRATION_DAYS => 1,
             self::CFG_BOLETO_BUSINESS_DAYS => 3,
+            self::CFG_SHOW_MISSING_TRANSACTION_WARNING => 1,
         ];
         foreach ($defaults as $key => $value) {
             $fullKey = self::CONFIG_PREFIX . $key;
@@ -590,6 +603,47 @@ class BaseAgappmax extends AgPaymentModule
     {
         $sql = 'SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA="' . pSQL(_DB_NAME_) . '" AND TABLE_NAME="' . pSQL(_DB_PREFIX_ . $table) . '" AND COLUMN_NAME="' . pSQL($column) . '"';
         return (bool)Db::getInstance()->getValue($sql);
+    }
+
+    protected function ignoreMissingTransactionOrder($orderId)
+    {
+        $orderId = (int) $orderId;
+        if ($orderId <= 0) {
+            return;
+        }
+
+        if (!class_exists('AgappmaxMissingTransactionIgnore', false)) {
+            require_once _PS_MODULE_DIR_ . $this->name . '/classes/AgappmaxMissingTransactionIgnore.php';
+        }
+
+        if (AgappmaxMissingTransactionIgnore::getByOrderId($orderId)) {
+            return;
+        }
+
+        $ignore = new AgappmaxMissingTransactionIgnore();
+        $ignore->id_order = $orderId;
+        $ignore->date_add = date('Y-m-d H:i:s');
+        $ignore->add();
+    }
+
+    protected function findOrdersWithoutTransaction()
+    {
+        $sql = new DbQuery();
+        $sql->from('orders', 'o')
+            ->select('o.*')
+            ->leftJoin(self::TBL_PAYMENT, 'p', 'o.id_order = p.id_order')
+            ->leftJoin('agappmax_missing_transaction_ignore', 'i', 'o.id_order = i.id_order')
+            ->where('o.module = "' . pSQL($this->name) . '"')
+            ->where('p.id_order IS NULL')
+            ->where('i.id_order IS NULL')
+            ->where('o.date_add >= "' . pSQL(date('Y-m-d H:i:s', strtotime('-1 months'))) . '"');
+
+        $rows = Db::getInstance()->executeS($sql);
+        if (!is_array($rows)) {
+            return [];
+        }
+
+        return ObjectModel::hydrateCollection('Order', $rows);
     }
 
     /**
@@ -1716,6 +1770,62 @@ class BaseAgappmax extends AgPaymentModule
             return '';
         }
         return $this->prepareOrderConfirmData($params);
+    }
+
+    public function hookDisplayBackOfficeHeader($params = [])
+    {
+        if (
+            !$this->active
+            || !$this->context
+            || !$this->context->controller
+            || $this->context->controller->controller_name !== 'AdminOrders'
+            || $this->context->controller->ajax
+        ) {
+            return;
+        }
+
+        if (Tools::getValue('agappmax_ignore_missing_transaction')) {
+            $this->ignoreMissingTransactionOrder(Tools::getValue('agappmax_ignore_missing_transaction'));
+
+            $redirectParams = [];
+            if (Tools::getValue('id_order')) {
+                $redirectParams['id_order'] = (int) Tools::getValue('id_order');
+            }
+            if (Tools::getValue('vieworder') !== false) {
+                $redirectParams['vieworder'] = true;
+            }
+
+            Tools::redirectAdmin($this->context->link->getAdminLink('AdminOrders', true, [], $redirectParams));
+        }
+
+        if (!Configuration::get(self::CONFIG_PREFIX . self::CFG_SHOW_MISSING_TRANSACTION_WARNING)) {
+            return;
+        }
+
+        $orders = $this->findOrdersWithoutTransaction();
+
+        if (!count($orders)) {
+            return;
+        }
+
+        $errorMsg = 'Os seguintes pedidos do PrestaShop estão com erros de integração com o AppMax. Clique sobre o ID dos pedidos para corrigir. <ul>';
+
+        foreach ($orders as $order) {
+            $link = $this->context->link->getAdminLink('AdminOrders', true, [], ['id_order' => (int) $order->id, 'vieworder' => true]);
+
+            $ignoreLinkParams = ['agappmax_ignore_missing_transaction' => (int) $order->id];
+            if (Tools::getValue('id_order')) {
+                $ignoreLinkParams['id_order'] = (int) Tools::getValue('id_order');
+            }
+            if (Tools::getValue('vieworder') !== false) {
+                $ignoreLinkParams['vieworder'] = true;
+            }
+
+            $ignoreLink = $this->context->link->getAdminLink('AdminOrders', true, [], $ignoreLinkParams);
+            $errorMsg .= '<li><a href="' . $link . '">' . $order->reference . '</a> <a href="' . $ignoreLink . '">ignorar</a></li>';
+        }
+
+        $this->context->controller->errors[] = $errorMsg;
     }
 
     public function hookDisplayOrderConfirmation($params)
