@@ -1,10 +1,12 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <module>
-  <name>agappmax</name>
-  <displayName>AppMax</displayName>
-  <version>2.0.11</version>
-  <description>Integração com AppMax: PIX, Boleto e Cartão.</description>
-  <author>AGTI</author>
-  <tab>payments_gateways</tab>
-  <is_configurable>1</is_configurable>
+    <name>agappmax</name>
+    <displayName><![CDATA[AppMax]]></displayName>
+    <version><![CDATA[2.0.12]]></version>
+    <description><![CDATA[Integração com AppMax: PIX, Boleto e Cartão.]]></description>
+    <author><![CDATA[AGTI]]></author>
+    <tab><![CDATA[payments_gateways]]></tab>
+    <is_configurable>1</is_configurable>
+    <need_instance>1</need_instance>
+    <limited_countries></limited_countries>
 </module>

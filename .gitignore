@@ -28,3 +28,5 @@ config_*.php
 Thumbs.db
 .env
 .env.local
+
+dist/
