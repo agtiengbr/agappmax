@@ -2,7 +2,7 @@
 <module>
     <name>agappmax</name>
     <displayName><![CDATA[AppMax]]></displayName>
-    <version><![CDATA[2.0.12]]></version>
+    <version><![CDATA[2.0.13]]></version>
     <description><![CDATA[Integração com AppMax: PIX, Boleto e Cartão.]]></description>
     <author><![CDATA[AGTI]]></author>
     <tab><![CDATA[payments_gateways]]></tab>

@@ -124,7 +124,7 @@ class BaseAgappmax extends AgPaymentModule
     {
         $this->name = 'agappmax';
         $this->tab = 'payments_gateways';
-        $this->version = '2.0.12';
+        $this->version = '2.0.13';
         $this->author = 'AGTI';
         $this->bootstrap = true;
 
@@ -521,7 +521,7 @@ class BaseAgappmax extends AgPaymentModule
     {
         $option = new PaymentOption();
         $label = Configuration::get(self::CONFIG_PREFIX . self::CFG_LABEL_PIX);
-        if ($label === '' || $label === null) {
+        if ($label === '' || $label === null || $label === false) {
             $label = 'Pagar com PIX (AppMax)';
         }
         $action = $this->context->link->getModuleLink($this->name, 'pix');
@@ -538,7 +538,7 @@ class BaseAgappmax extends AgPaymentModule
     {
         $option = new PaymentOption();
         $label = Configuration::get(self::CONFIG_PREFIX . self::CFG_LABEL_BOLETO);
-        if ($label === '' || $label === null) {
+        if ($label === '' || $label === null || $label === false) {
             $label = 'Boleto bancario (AppMax)';
         }
         $action = $this->context->link->getModuleLink($this->name, 'boleto');
@@ -555,7 +555,7 @@ class BaseAgappmax extends AgPaymentModule
     {
         $option = new PaymentOption();
         $label = Configuration::get(self::CONFIG_PREFIX . self::CFG_LABEL_CARD);
-        if ($label === '' || $label === null) {
+        if ($label === '' || $label === null || $label === false) {
             $label = 'Cartao de credito (AppMax)';
         }
         $action = $this->context->link->getModuleLink($this->name, 'card');
